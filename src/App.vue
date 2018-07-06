@@ -38,7 +38,7 @@ export default class App extends Vue {
   -moz-osx-font-smoothing grayscale
   text-align center
   color var(--appTextColorMain)
-  background url("<%= BASE_URL %>assets/bg.png")
+  background url("/Vue-Player/dist/assets/bg.png")
   background-color var(--appBackgroundColorMain)
   background-position center
   background-size auto
