@@ -133,9 +133,7 @@ export default class Player extends Vue {
     this.audio.onended = (e) => {
       this.isPlaying = false;
       if (this.repeat) {
-        if (this.repeatType === 'repeat') {
-          ;
-        } else {
+        if (this.repeatType !== 'repeat') {
           this.currentTimeRaw = 0;
           this.audio.currentTime = 0;
         }

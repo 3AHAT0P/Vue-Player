@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const path = require('path');
 
 module.exports = {
+  baseUrl: '/Vue-Player/dist/',
   configureWebpack: {
     plugins: [
       new webpack.LoaderOptionsPlugin({
@@ -12,6 +13,6 @@ module.exports = {
           }
         }
       })
-    ]
-  }
+    ],
+  },
 }
