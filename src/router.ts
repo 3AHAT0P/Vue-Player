@@ -9,6 +9,7 @@ import {
 Vue.use(Router);
 
 export default new Router({
+  base: '/Vue-Player/',
   mode: 'history',
   routes: [
     HomeTreeBuilder('/', 'home'),
