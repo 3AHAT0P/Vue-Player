@@ -1,16 +1,16 @@
 <template>
   <div :class="blockName | bemMods(mods)">
     <div :class="blockName | bemElement('track-info') | bemMods()">
-      <template v-if="fileMetaData">
-        .:: {{durationMinutes}}:{{durationSeconds}} ::
-        - {{fileMetaData.name}} ::
-        {{fileMetaData.type}} ::
-        {{fileMetaData.sampleRate}} kHz, {{fileMetaData.bitrate}} kbps, {{fileMetaData.size}} Mb
+      <template v-if="state.track">
+        .:: {{state.track.duration | duration('s', 'MM:SS')}} ::
+        - {{state.track.name}} ::
+        {{state.track.type}} ::
+        {{state.track.sampleRate}} kHz, {{state.track.bitrate}} kbps, {{state.track.size}} Mb
         ::.
       </template>
     </div>
     <div :class="blockName | bemElement('display') | bemMods()">
-      {{currentMinutes}}:{{currentSeconds}}
+      {{state.currentSecond | duration('s', 'MM:SS')}}
       <Visualiser v-if="analyser != null" :analyser="analyser" :width="200" :height="30" :displayBins="64"/>
     </div>
     <div :class="blockName | bemElement('progress') | bemMods()">
@@ -18,19 +18,25 @@
     </div>
     <div :class="blockName | bemElement('controls') | bemMods()">
       <Button icon="eject" :mods="{hover: 'size'}" @click="load"/>
-      <Button :icon="isPlaying ? 'pause' : 'play_arrow'" :mods="{hover: 'size'}" @click="togglePlay"/>
+      <Button :icon="isPlaying ? 'pause' : 'play_arrow'" :mods="{hover: 'size', state: (state.track ? 'default' : 'non-active')}" @click="togglePlay"/>
       <Button icon="stop" :mods="{hover: 'size'}" @click="stop"/>
       <Button icon="skip_previous" :mods="{hover: 'size'}"/>
       <Button icon="skip_next" :mods="{hover: 'size'}"/>
-      <Button icon="shuffle" :mods="{hover: 'size', state: (shuffled ? 'active' : 'non-active')}" @click="changeShuffledState"/>
-      <Button :icon="repeatType" :mods="{hover: 'size', state: (repeat ? 'active' : 'non-active')}" @click="changeRepeatState"/>
-      <Volume :value="volume" @changed="updateVolume"/>
+      <Button icon="shuffle" :mods="{hover: 'size', state: (state.isShuffle ? 'active' : 'non-active')}" @click="toggleShuffleMode"/>
+      <Button
+        :icon="state.isRepeat > 1 ? 'repeat_one' : 'repeat'"
+        :mods="{hover: 'size', state: (state.isRepeat > 0 ? 'active' : 'non-active')}"
+        @click="nextRepeatMode"
+      />
+      <Volume :value="state.volume" @changed="updateVolume"/>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
+import { MutationMethod } from 'vuex';
+import { State, Mutation } from 'vuex-class';
 
 import { Button } from '@/components/core';
 import Progress from '@/components/progress.vue';
@@ -46,13 +52,7 @@ export default class Player extends Vue {
   private blockName: string = 'player';
 
   private cacheProgress: number = 0;
-  private currentTimeRaw: number = 0;
-  private duration: number = 0;
-  private volume: number = 1;
   private isPlaying: boolean = false;
-  private shuffled: boolean = false;
-  private repeat: boolean = false;
-  private repeatType: 'repeat'|'repeat_one' = 'repeat';
 
   private audio: HTMLAudioElement = null;
   private ctx: AudioContext = null;
@@ -60,50 +60,42 @@ export default class Player extends Vue {
   private scriptProcessor: ScriptProcessorNode = null;
   private gainNode: GainNode = null;
   private source: MediaElementAudioSourceNode = null;
-  private file: File = null;
-  private src: string = null;
 
-  get currentMinutes(): string {
-    return Math.trunc(this.currentTimeRaw / 60).toString().padStart(2, '0');
-  }
-
-  get currentSeconds(): string {
-    return Math.trunc(this.currentTimeRaw - Number(this.currentMinutes) * 60).toString().padStart(2, '0');
-  }
-
-  get durationMinutes(): string {
-    return Math.trunc(this.duration / 60).toString().padStart(2, '0');
-  }
-
-  get durationSeconds(): string {
-    return Math.trunc(this.duration - Number(this.durationMinutes) * 60).toString().padStart(2, '0');
-  }
-
-  get fileMetaData() {
-    if (this.file == null) return null;
-    return {
-      name: this.file.name.replace(/\..*$/, ''),
-      type: this.file.type.replace(/^.*\//, ''),
-      size: Math.round(this.file.size / (1024 * 1024) * 10) / 10,
-      sampleRate: this.ctx.sampleRate / 1000,
-      bitrate: Math.round((this.file.size / 1024 ) * 8 / this.duration),
-    };
-  }
+  @State('player') private state: IPlayerData;
 
   get playProgress() {
+    if (this.state.track == null) return 0;
     try {
-      const progress = this.currentTimeRaw / this.duration;
+      const progress = this.state.currentSecond / this.state.track.duration;
       return isNaN(progress) ? 0 : progress;
     } catch (e) {
       return 0;
     }
   }
 
-  private updateVolume(value: number) {
-    this.volume = value;
-    this.audio.volume = this.volume;
-    // this.gainNode.gain.value = this.volume * 10;
-    // this.gainNode.gain.setValueAtTime(this.volume*100, this.audio.currentTime);
+  @Mutation('updateTrack') private updateTrack: MutationMethod;
+  @Mutation('updateState') private updateState: MutationMethod;
+  @Mutation('playingTick') private playingTick: MutationMethod;
+  @Mutation('updateVolume') private updateVolume: MutationMethod;
+  @Mutation('nextRepeatMode') private nextRepeatMode: MutationMethod;
+  @Mutation('toggleShuffleMode') private toggleShuffleMode: MutationMethod;
+  @Mutation('createTrack') private createTrack: MutationMethod;
+  @Mutation('patchTrack') private patchTrack: MutationMethod;
+
+  @Watch('state.volume')
+  private onVolumeChange(value: number) {
+    this.audio.volume = value;
+  }
+
+  @Watch('state.status')
+  private onStatusChange(value: PlayerStatus) {
+    this.isPlaying = value === 'isPlaying';
+  }
+
+  private created() {
+    this.onTimeUpdate = this.onTimeUpdate.bind(this);
+    this.onDurationChange = this.onDurationChange.bind(this);
+    this.onAudioEnd = this.onAudioEnd.bind(this);
   }
 
   private mounted() {
@@ -128,81 +120,82 @@ export default class Player extends Vue {
     this.source.connect(this.ctx.destination);
     // this.analyser.connect(this.ctx.destination);
 
-    this.scriptProcessor.onaudioprocess = (e) => this.currentTimeRaw = this.audio.currentTime;
-    this.audio.onplaying = (e) => this.duration = (this.audio.duration || 0);
-    this.audio.onended = (e) => {
-      this.isPlaying = false;
-      if (this.repeat) {
-        if (this.repeatType === 'repeat') {
-          ;
-        } else {
-          this.currentTimeRaw = 0;
-          this.audio.currentTime = 0;
-        }
-        this.togglePlay();
+    // this.scriptProcessor.addEventListener('audioprocess', this.onAudioProcess)
+    this.audio.addEventListener('timeupdate', this.onTimeUpdate);
+    this.audio.addEventListener('durationchange', this.onDurationChange);
+    this.audio.addEventListener('ended', this.onAudioEnd);
+    if (this.state.track !== null) {
+      this.audio.src = this.state.track.source;
+      this.audio.currentTime = this.state.currentSecond;
+    }
+  }
+
+  private onTimeUpdate(event: Event) {
+    const time = Math.round(this.audio.currentTime);
+    if (this.state.currentSecond !== time) this.playingTick(time);
+  }
+
+  private onDurationChange(event: Event) {
+    this.patchTrack({
+      id: this.state.track.id,
+      data: {
+        duration: Math.round(this.audio.duration),
+        sampleRate: this.ctx.sampleRate / 1000,
+        bitrate: Math.round((this.state.track.originFile.size / 1024 ) * 8 / this.audio.duration),
+      },
+    });
+  }
+
+  private onAudioEnd(event: Event) {
+    this.updateState('isPaused');
+    if (this.state.isRepeat > 0) {
+      if (this.state.isRepeat === 1) {
+        ;
+      } else {
+        this.audio.currentTime = 0;
       }
-    };
+      this.togglePlay();
+    }
   }
 
   private async load() {
     const input = document.createElement('input');
     input.type = 'file';
-    this.src = await new Promise<string>(
-      (resolve) => {
-        input.onchange = (event) =>
-          resolve(URL.createObjectURL(this.file = (event.target as any).files[0]));
+    input.accept='audio/*';
+    const track = await new Promise<ITrackData>(
+      (resolve, reject) => {
+        input.onchange = (event) => {
+          this.updateState('isDataWaiting');
+          this.createTrack({file: (event.target as any).files[0], defer: {resolve, reject}});
+        };
         input.click();
       },
     );
-    this.audio.src = this.src;
-    const vol = this.audio.volume;
-    this.audio.volume = 0;
-    await new Promise((resolve) => {
-      const cb = () => {
-        this.audio.removeEventListener('playing', cb);
-        this.audio.pause();
-        this.audio.volume = vol;
-        this.audio.currentTime = 0;
-      };
-      this.audio.addEventListener('playing', cb);
-      this.audio.play();
-    });
+    this.updateTrack(track);
+    this.audio.src = track.source;
+    this.updateState('isPaused');
   }
 
   private togglePlay() {
-    if (this.src != null) {
+    if (this.audio.src != null) {
       if (this.isPlaying) {
         this.audio.pause();
-        this.isPlaying = false;
+        this.updateState('isPaused');
       } else {
         this.audio.play();
-        this.isPlaying = true;
+        this.updateState('isPlaying');
       }
     }
   }
 
   private stop() {
     this.audio.pause();
-    this.isPlaying = false;
+    this.updateState('isStopped');
     this.audio.currentTime = 0;
-    this.currentTimeRaw = 0;
   }
 
   private seekPercent(percent: number) {
-    this.audio.currentTime = percent * this.duration;
-  }
-
-  private changeRepeatState() {
-    if (!this.repeat) return this.repeat = true;
-    else if (this.repeatType === 'repeat') return this.repeatType = 'repeat_one';
-    else if (this.repeatType === 'repeat_one') {
-      this.repeat = false;
-      return this.repeatType = 'repeat';
-    }
-  }
-
-  private changeShuffledState() {
-    this.shuffled = !this.shuffled;
+    this.audio.currentTime = percent * this.state.track.duration;
   }
 }
 </script>
