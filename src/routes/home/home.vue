@@ -1,17 +1,18 @@
 <template>
   <div :class="blockName">
-    <Player/>
+    <Player />
+    <Playlists />
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 
-import { Player } from '@/components';
+import { Player, Playlists } from '@/components';
 
 @Component({
   components: {
-    Player,
+    Player, Playlists,
   },
 })
 export default class Home extends Vue {
@@ -23,8 +24,9 @@ export default class Home extends Vue {
 .home-page
   display grid
   grid-template-columns 1fr 300px 1fr
-  // grid-template-rows 200px 100px
-  align-items center
+  grid-template-rows auto 1fr
+  justify-items stretch
+  align-items start
 
 </style>
 

@@ -59,6 +59,10 @@ export default class Button extends Vue {
   &--state-non-active
     opacity .6
   
+  &--state-disabled
+    opacity .6
+    pointer-events none
+  
   &--state-active
     opacity 1
 
