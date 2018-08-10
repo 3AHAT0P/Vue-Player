@@ -96,10 +96,9 @@ export default class Playlists extends Vue {
   }
 
   private clearAddButtonText(event: Event) {
-    // (event.target as HTMLSpanElement).textContent = '';
     requestAnimationFrame(() => {
       (event.target as HTMLSpanElement).textContent = '';
-    })
+    });
   }
 }
 </script>
