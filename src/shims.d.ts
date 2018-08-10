@@ -1,6 +1,17 @@
 declare global {
-  abstract class Hash {
-    [key: string]: any;
+  abstract class Hash<T = any> {
+    [key: string]: T;
+  }
+
+  abstract class LinkedList<T> {
+    first: T;
+    last: T;
+  }
+
+  abstract class LinkedListNode<T, G = any> {
+    prev: T;
+    next: T;
+    data: G;
   }
 
   // interface String {
@@ -31,6 +42,8 @@ declare global {
   //   padEnd(maxLength: number, fillString?: string): string;
   // }
   type fn = (...args: any[]) => any;
+
+  type MutationMethod = (payload: any) => void;
 
   type Defer = {
     resolve: (data: any) => any;

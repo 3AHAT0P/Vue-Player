@@ -1,11 +1,11 @@
 <template>
   <div :class="blockName | bemMods(mods)">
     <div :class="blockName | bemElement('track-info') | bemMods()">
-      <template v-if="state.track">
-        .:: {{state.track.duration | duration('s', 'MM:SS')}} ::
-        - {{state.track.name}} ::
-        {{state.track.type}} ::
-        {{state.track.sampleRate}} kHz, {{state.track.bitrate}} kbps, {{state.track.size}} Mb
+      <template v-if="currentTrack != null">
+        .:: {{currentTrack.duration | duration('s', 'MM:SS')}} ::
+        - {{currentTrack.name}} ::
+        {{currentTrack.type}} ::
+        {{currentTrack.sampleRate}} kHz, {{currentTrack.bitrate}} kbps, {{currentTrack.size}} Mb
         ::.
       </template>
     </div>
@@ -17,11 +17,10 @@
       <Progress :cacheProgress="cacheProgress" :playProgress="playProgress" @changed="seekPercent"/>
     </div>
     <div :class="blockName | bemElement('controls') | bemMods()">
-      <Button icon="eject" :mods="{hover: 'size'}" @click="load"/>
-      <Button :icon="isPlaying ? 'pause' : 'play_arrow'" :mods="{hover: 'size', state: (state.track ? 'default' : 'non-active')}" @click="togglePlay"/>
+      <Button :icon="isPlaying ? 'pause' : 'play_arrow'" :mods="{hover: 'size', state: (currentTrack ? 'default' : 'non-active')}" @click="togglePlay"/>
       <Button icon="stop" :mods="{hover: 'size'}" @click="stop"/>
-      <Button icon="skip_previous" :mods="{hover: 'size'}"/>
-      <Button icon="skip_next" :mods="{hover: 'size'}"/>
+      <Button icon="skip_previous" :mods="{hover: 'size'}" @click="prev"/>
+      <Button icon="skip_next" :mods="{hover: 'size'}" @click="next"/>
       <Button icon="shuffle" :mods="{hover: 'size', state: (state.isShuffle ? 'active' : 'non-active')}" @click="toggleShuffleMode"/>
       <Button
         :icon="state.isRepeat > 1 ? 'repeat_one' : 'repeat'"
@@ -35,13 +34,14 @@
 
 <script lang="ts">
 import { Vue, Component, Prop, Watch } from 'vue-property-decorator';
-import { MutationMethod } from 'vuex';
-import { State, Mutation } from 'vuex-class';
+import { State, Getter, Mutation } from 'vuex-class';
 
 import { Button } from '@/components/core';
 import Progress from '@/components/progress.vue';
 import Visualiser from '@/components/visualiser.vue';
 import Volume from '@/components/volume.vue';
+import playlist from '@/store/mutations/playlist';
+import { promisifyMutation } from '@/utils';
 
 @Component({
   components: { Button, Progress, Visualiser, Volume },
@@ -62,18 +62,21 @@ export default class Player extends Vue {
   private source: MediaElementAudioSourceNode = null;
 
   @State('player') private state: IPlayerData;
+  @State('playlists') private playlists: IPlaylistCollection;
+
+  @Getter('Player::currentTrack') private currentTrack: ITrackData;
 
   get playProgress() {
-    if (this.state.track == null) return 0;
+    if (this.currentTrack == null) return 0;
     try {
-      const progress = this.state.currentSecond / this.state.track.duration;
+      const progress = this.state.currentSecond / this.currentTrack.duration;
       return isNaN(progress) ? 0 : progress;
     } catch (e) {
       return 0;
     }
   }
 
-  @Mutation('updateTrack') private updateTrack: MutationMethod;
+  @Mutation('updateActivePlaylist') private updateActivePlaylist: MutationMethod;
   @Mutation('updateState') private updateState: MutationMethod;
   @Mutation('playingTick') private playingTick: MutationMethod;
   @Mutation('updateVolume') private updateVolume: MutationMethod;
@@ -81,6 +84,10 @@ export default class Player extends Vue {
   @Mutation('toggleShuffleMode') private toggleShuffleMode: MutationMethod;
   @Mutation('createTrack') private createTrack: MutationMethod;
   @Mutation('patchTrack') private patchTrack: MutationMethod;
+  @Mutation('createPlaylist') private createPlaylist: MutationMethod;
+  @Mutation('addTracksToPlaylist') private addTracksToPlaylist: MutationMethod;
+  @Mutation('getNextTrack') private getNextTrack: MutationMethod;
+  @Mutation('getPrevTrack') private getPrevTrack: MutationMethod;
 
   @Watch('state.volume')
   private onVolumeChange(value: number) {
@@ -92,18 +99,30 @@ export default class Player extends Vue {
     this.isPlaying = value === 'isPlaying';
   }
 
+  @Watch('currentTrack')
+  private onTrackChange() {
+    this.audio.src = this.currentTrack.source;
+    this.play();
+  }
+
   private created() {
     this.onTimeUpdate = this.onTimeUpdate.bind(this);
     this.onDurationChange = this.onDurationChange.bind(this);
     this.onAudioEnd = this.onAudioEnd.bind(this);
   }
 
-  private mounted() {
+  private async mounted() {
     this.initAudio();
+
+    const mainPlaylist = Object.values(this.playlists).pop() ||
+      await promisifyMutation(this.createPlaylist, { title: 'test' });
+
+    if (this.state.activePlaylist == null) this.updateActivePlaylist(mainPlaylist);
   }
 
   private initAudio() {
     this.audio = document.createElement('audio');
+    this.audio.preload = 'metadata';
     this.ctx = new AudioContext();
 
     this.source = this.ctx.createMediaElementSource(this.audio);
@@ -124,8 +143,8 @@ export default class Player extends Vue {
     this.audio.addEventListener('timeupdate', this.onTimeUpdate);
     this.audio.addEventListener('durationchange', this.onDurationChange);
     this.audio.addEventListener('ended', this.onAudioEnd);
-    if (this.state.track !== null) {
-      this.audio.src = this.state.track.source;
+    if (this.currentTrack != null) {
+      this.audio.src = this.currentTrack.source;
       this.audio.currentTime = this.state.currentSecond;
     }
   }
@@ -137,53 +156,38 @@ export default class Player extends Vue {
 
   private onDurationChange(event: Event) {
     this.patchTrack({
-      id: this.state.track.id,
+      id: this.currentTrack.id,
       data: {
         duration: Math.round(this.audio.duration),
         sampleRate: this.ctx.sampleRate / 1000,
-        bitrate: Math.round((this.state.track.originFile.size / 1024 ) * 8 / this.audio.duration),
+        bitrate: Math.round((this.currentTrack.originFile.size / 1024 ) * 8 / this.audio.duration),
       },
     });
   }
 
-  private onAudioEnd(event: Event) {
-    this.updateState('isPaused');
-    if (this.state.isRepeat > 0) {
-      if (this.state.isRepeat === 1) {
-        ;
-      } else {
-        this.audio.currentTime = 0;
-      }
-      this.togglePlay();
+  private async onAudioEnd(event: Event) {
+    if (this.state.isRepeat === 2) {
+      this.audio.currentTime = 0;
+      this.play();
+    } else {
+      this.next();
     }
   }
 
-  private async load() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept='audio/*';
-    const track = await new Promise<ITrackData>(
-      (resolve, reject) => {
-        input.onchange = (event) => {
-          this.updateState('isDataWaiting');
-          this.createTrack({file: (event.target as any).files[0], defer: {resolve, reject}});
-        };
-        input.click();
-      },
-    );
-    this.updateTrack(track);
-    this.audio.src = track.source;
-    this.updateState('isPaused');
+  private async play() {
+    if (this.audio.src != null) {
+      this.audio.play();
+      if (this.state.status !== 'isPlaying') this.updateState('isPlaying');
+    }
   }
 
-  private togglePlay() {
+  private async togglePlay() {
     if (this.audio.src != null) {
       if (this.isPlaying) {
         this.audio.pause();
         this.updateState('isPaused');
       } else {
-        this.audio.play();
-        this.updateState('isPlaying');
+        this.play();
       }
     }
   }
@@ -195,7 +199,37 @@ export default class Player extends Vue {
   }
 
   private seekPercent(percent: number) {
-    this.audio.currentTime = percent * this.state.track.duration;
+    this.audio.currentTime = percent * this.currentTrack.duration;
+  }
+
+  private async next() {
+    const track = await promisifyMutation(
+      this.getNextTrack,
+      {
+        id: this.state.activePlaylist.id,
+        isRepeatList: this.state.isRepeat === 1,
+        isRandom: this.state.isShuffle,
+      },
+    );
+    if (this.state.status === 'isPlaying') {
+      this.audio.src = track.source;
+      this.audio.play();
+    }
+  }
+
+  private async prev() {
+    const track = await promisifyMutation(
+      this.getPrevTrack,
+      {
+        id: this.state.activePlaylist.id,
+        isRepeatList: this.state.isRepeat === 1,
+        isRandom: this.state.isShuffle,
+      },
+    );
+    if (this.state.status === 'isPlaying') {
+      this.audio.src = track.source;
+      this.audio.play();
+    }
   }
 }
 </script>
@@ -203,7 +237,6 @@ export default class Player extends Vue {
 <style scoped lang="stylus">
 .player
   position relative
-  top -100px
   grid-column 2
 
   display grid

@@ -1,7 +1,7 @@
 declare global {
   type PlayerStatus = 'isPlaying' | 'isPaused' | 'isStopped' | 'isDataWaiting';
   interface IPlayerData {
-    track: ITrackData;
+    activePlaylist: IPlaylistData;
     currentSecond: number;
     cachedSeconds: number;
     volume: number;
@@ -13,6 +13,7 @@ declare global {
 
 export default {
   track: null,
+  activePlaylist: null,
   currentSecond: 0,
   cachedSeconds: 0,
   volume: 1,

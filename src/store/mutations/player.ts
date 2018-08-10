@@ -1,6 +1,6 @@
 export default {
-  updateTrack(state: IMainData, track: ITrackData) {
-    state.player.track = track;
+  updateActivePlaylist(state: IMainData, playlist: IPlaylistData) {
+    state.player.activePlaylist = playlist;
   },
   playingTick(state: IMainData, currentSecond: number) {
     state.player.currentSecond = Math.round(currentSecond);

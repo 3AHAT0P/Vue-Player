@@ -1,5 +1,5 @@
 <template>
-  <i :class="blockName | bemMods({library})">{{name}}</i>
+  <i :class="blockName | bemMods({library, size})">{{name}}</i>
 </template>
 
 <script lang="ts">
@@ -16,7 +16,7 @@ export default class Icon extends Vue {
   @Prop({ default: (): string => null })
   private name!: string;
 
-  @Prop({ default: () => 48 })
+  @Prop({ default: () => 24 })
   private size!: number;
 
   private blockName: string = 'icon';
@@ -28,7 +28,7 @@ export default class Icon extends Vue {
 .icon
   font-weight normal
   font-style normal
-  font-size 24px;  /* Preferred icon size */
+  font-size 24px  /* Preferred icon size */
   display inline-block
   line-height 1
   text-transform none
@@ -49,6 +49,13 @@ export default class Icon extends Vue {
   font-feature-settings 'liga'
   &--library-mdi
     font-family 'Material Icons'
+  &--size-
+    &20
+      font-size 20px
+    &24
+      font-size 24px
+    &48
+      font-size 48px
 
 
 </style>

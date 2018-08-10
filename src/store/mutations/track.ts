@@ -1,3 +1,5 @@
+import Vue from 'vue';
+
 import { uuid } from '@/utils';
 
 declare global {
@@ -28,11 +30,11 @@ export default {
 
     // sampleRate: this.ctx.sampleRate / 1000,
     // bitrate: Math.round((this.file.size / 1024) * 8 / this.duration),
-    state.tracks.set(track.id, track);
+    Vue.set(state.tracks, track.id, track);
     if (defer.resolve != null) defer.resolve(track);
   },
   patchTrack(state: IMainData, { id, data, defer = {} as Defer }: ITrackPatchMutationData) {
-    const track: Hash = state.tracks.get(id);
+    const track: Hash<any> = state.tracks[id];
     for (const [key, value] of Object.entries(data)) {
       track[key] = value;
     }

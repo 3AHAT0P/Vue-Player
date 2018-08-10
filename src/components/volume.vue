@@ -88,6 +88,7 @@ export default class Volume extends Vue {
     transition visibility 0s linear 0s, opacity .4s linear 1s
   &__front
     position fixed
+    z-index 100
     display grid
     grid-template-columns auto
     grid-template-rows 32px 132px

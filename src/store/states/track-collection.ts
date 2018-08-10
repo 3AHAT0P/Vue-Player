@@ -11,7 +11,7 @@ declare global {
     originFile: File;
   }
 
-  interface ITrackCollection extends Map<string, ITrackData> {}
+  interface ITrackCollection extends Hash<ITrackData> {}
 }
 
-export default new Map<string, ITrackData>() as ITrackCollection;
+export default {} as ITrackCollection;
