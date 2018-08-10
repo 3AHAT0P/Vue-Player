@@ -165,7 +165,6 @@ export default {
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
     playlist.cursor = node;
-    state.player.track = playlist.cursor.data;
     if (defer.resolve != null) defer.resolve(playlist.cursor && playlist.cursor.data);
   },
 };
