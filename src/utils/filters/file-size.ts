@@ -1,10 +1,10 @@
-type availableTypes = 'B' | 'KB' | 'MB' | 'GB' | 'TB' | 'PB';
+type availableTypes = 'b' | 'Kb' | 'Mb' | 'Gb' | 'Tb' | 'Pb';
 
-const TYPES = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+const TYPES = ['b', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb'];
 
 export default (
   value: number,
-  typeIn: availableTypes = 'B',
+  typeIn: availableTypes = 'b',
   typeOut: availableTypes | 'auto' = 'auto',
 ) => {
   let result = value;
