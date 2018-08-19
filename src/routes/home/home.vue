@@ -27,6 +27,8 @@ export default class Home extends Vue {
   grid-template-rows auto 1fr
   justify-items stretch
   align-items start
+  overflow hidden
 
+  max-height 100%
 </style>
 

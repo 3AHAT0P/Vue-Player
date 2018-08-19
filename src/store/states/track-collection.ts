@@ -9,6 +9,7 @@ declare global {
     sampleRate: number;
     bitrate: number;
     originFile: File;
+    relatedPlaylists: IPlaylistData[];
   }
 
   interface ITrackCollection extends Hash<ITrackData> {}

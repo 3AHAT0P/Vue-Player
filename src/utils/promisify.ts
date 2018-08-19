@@ -1,6 +1,6 @@
-export default (mutation: MutationMethod, data: any = {}): Promise<any> => {
+export default (fn: (payload: any) => void, data: any = {}): Promise<any> => {
   return new Promise((resolve, reject) => {
-    mutation({
+    fn({
       ...data,
       defer: {
         resolve, reject,

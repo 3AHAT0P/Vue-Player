@@ -8,7 +8,6 @@
         @click="setActivePlaylist(value)"
       >
         <template v-if="activePlaylistId === key">
-          <!-- {{index}}. <input :value="value.name" onInput="" /> -->
           {{index}}.
           <span
             :class="blockName | bemElement('playlist-title-input') | bemMods()"
@@ -20,11 +19,13 @@
           {{index}}.
           <span
             :class="blockName | bemElement('playlist-title-input') | bemMods()"
+            contenteditable="false"
           >{{value.name}}</span>
         </template>
       </div>
       <div
         :class="blockName | bemElement('playlist-title') | bemMods({ type: 'create' })"
+        @click="focusSpan"
       >
         <Icon name="add" :size="20" />
         <span
@@ -32,12 +33,13 @@
           contenteditable="true"
           @focus="clearAddButtonText"
           @blur="createNewPlaylist"
+          @keydown.stop.prevent.enter="$event.target.blur()"
         >Add</span>
       </div>
     </div>
     <div :class="blockName | bemElement('body') | bemMods()">
       <Playlist
-        :model="player.activePlaylist"
+        :model="openedPlaylist"
         :class="blockName | bemElement('playlist') | bemMods()"
       />
     </div>
@@ -51,6 +53,7 @@ import { State, Mutation } from 'vuex-class';
 
 import { Button, Icon } from '@/components/core';
 import Playlist from '@/components/playlist.vue';
+import { promisify } from '@/utils';
 
 @Component({
   components: { Button, Icon, Playlist },
@@ -58,14 +61,18 @@ import Playlist from '@/components/playlist.vue';
 export default class Playlists extends Vue {
   @Prop({ default: () => ({}) }) private mods!: Hash;
 
-  @State('player') private player: ITrackCollection;
+  @State('player') private player: IPlayerData;
   @State('playlists') private playlists: ITrackCollection;
 
   private blockName: string = 'playlists';
 
-  get activePlaylistId() {
+  private openedPlaylist: IPlaylistData = null;
+
+  private get activePlaylistId() {
+    if (this.openedPlaylist != null) return this.openedPlaylist.id;
     if (this.player.activePlaylist == null) return null;
-    return this.player.activePlaylist.id;
+    this.openedPlaylist = this.player.activePlaylist;
+    return this.openedPlaylist.id;
   }
 
   @Mutation('setTitleToPlaylist') private setTitleToPlaylist: MutationMethod;
@@ -74,7 +81,8 @@ export default class Playlists extends Vue {
 
   private setActivePlaylist(playlist: IPlaylistData) {
     if (this.activePlaylistId === playlist.id) return;
-    this.updateActivePlaylist(playlist);
+    this.openedPlaylist = playlist;
+    // this.updateActivePlaylist(playlist);
   }
 
   private updateTitle(event: Event) {
@@ -86,19 +94,24 @@ export default class Playlists extends Vue {
     });
   }
 
-  private createNewPlaylist(event: Event) {
+  private async createNewPlaylist(event: Event) {
     const title = (event.target as HTMLSpanElement).textContent;
     (event.target as HTMLSpanElement).textContent = 'Add';
     if (title.trim().length === 0) return;
-    this.createPlaylist({
+    const playlist = await promisify(this.createPlaylist, {
       title,
     });
+    this.setActivePlaylist(playlist);
   }
 
   private clearAddButtonText(event: Event) {
     requestAnimationFrame(() => {
       (event.target as HTMLSpanElement).textContent = '';
     });
+  }
+
+  private focusSpan(event: Event) {
+    ((event.currentTarget as HTMLElement).lastElementChild as HTMLElement).focus();
   }
 }
 </script>
@@ -107,19 +120,28 @@ export default class Playlists extends Vue {
 .playlists
   grid-column 2
   display grid
-  grid-template-rows 32px 1fr
+  grid-template-rows 32px 1fr 32px
   grid-template-columns 1fr
   overflow hidden
 
+  max-height 100%
   padding 4px
   border-radius 2px
 
   &__header
+    z-index 2
+
     display flex
 
     overflow auto
+    transform translate(0, 1px)
     &::-webkit-scrollbar
       display none
+  
+  &__body
+    overflow hidden
+
+    border 1px solid hsla(190, 100%, 50%, 0.4)
 
   &__playlist-title
     display flex
@@ -130,7 +152,6 @@ export default class Playlists extends Vue {
     width fit-content
     padding 4px 8px
     border 1px solid transparent
-    border-bottom none
 
     cursor pointer
     &:hover
@@ -138,7 +159,7 @@ export default class Playlists extends Vue {
       box-shadow 0 0 8px -2px hsla(190, 100%, 50%, .4)
     &--state-active
       border 1px solid hsla(190, 100%, 50%, .4)
-      border-bottom none
+      border-bottom-color hsl(0, 0%, 0%)
       border-radius 8px 8px 0 0
       box-shadow 0px -3px 4px 0px hsla(190, 100%, 50%, .4)
       &:hover

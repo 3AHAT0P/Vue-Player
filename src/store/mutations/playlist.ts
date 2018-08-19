@@ -1,6 +1,9 @@
 import Vue from 'vue';
 
-import { uuid } from '@/utils';
+import {
+  uuid,
+  getRandomArbitraryInt,
+} from '@/utils';
 
 declare global {
   interface IPlaylistCreateMutationData {
@@ -35,20 +38,31 @@ declare global {
     node: ITrackNode;
     defer?: Defer;
   }
+  interface IPlaylistRecalcMutationData {
+    id: string;
+    defer?: Defer;
+  }
 }
 
-const generateListFromArray = (array: ITrackData[]) => {
+const generateListFromArray = (array: ITrackData[], playlist: IPlaylistData) => {
   const list: ITrackList = {
     first: null,
     last: null,
   };
 
-  return array.reduce((res: ITrackList, item: ITrackData, index: number) => {
+  let size = 0;
+  let duration = 0;
+
+  const result = array.reduce((res: ITrackList, item: ITrackData, index: number) => {
+    item.relatedPlaylists.push(playlist);
     const node: ITrackNode = {
       prev: null,
       next: null,
       data: item,
     };
+
+    size += item.size;
+    duration += item.duration;
 
     if (res.first === null) {
       Vue.set(res, 'last', node);
@@ -60,15 +74,21 @@ const generateListFromArray = (array: ITrackData[]) => {
     }
     return res;
   }, list);
+
+  playlist.size = size;
+  playlist.duration = duration;
+
+  return result;
 };
 
 export default {
   createPlaylist(state: IMainData, { title, tracks = [], defer = {} as Defer }: IPlaylistCreateMutationData): void {
 
-    const trackList = generateListFromArray(tracks);
-
     const playlist: IPlaylistData = {
-      trackList,
+      trackList: {
+        first: null,
+        last: null,
+      },
       id: uuid(),
       name: title,
       size: 0,
@@ -76,6 +96,8 @@ export default {
       duration: 0,
       cursor: null,
     };
+
+    Vue.set(playlist, 'trackList', generateListFromArray(tracks, playlist));
 
     Vue.set(state.playlists, playlist.id, playlist);
     if (defer.resolve != null) defer.resolve(playlist);
@@ -102,11 +124,14 @@ export default {
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
     for (const track of tracks) {
+      track.relatedPlaylists.push(playlist);
       const node: ITrackNode = {
         prev: null,
         next: null,
         data: track,
       };
+      playlist.size += track.size;
+      playlist.duration += track.duration;
       if (playlist.trackList.first == null) {
         Vue.set(playlist.trackList, 'last', node);
         Vue.set(playlist.trackList, 'first', node);
@@ -130,10 +155,22 @@ export default {
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
     if (playlist.cursor == null) playlist.cursor = playlist.trackList.first;
-    else playlist.cursor = playlist.cursor.next;
+    else if (isRandom) {
+      let cursor = playlist.cursor;
+      for (let counter = getRandomArbitraryInt(1, playlist.count); counter > 0; --counter) {
+        cursor = cursor.next;
+        if (cursor == null) cursor = playlist.trackList.first;
+      }
+      playlist.cursor = cursor;
+    } else playlist.cursor = playlist.cursor.next;
+
     if (playlist.cursor == null) {
       if (isRepeatList) playlist.cursor = playlist.trackList.first;
-      else playlist.cursor = playlist.trackList.last;
+      else {
+        playlist.cursor = playlist.trackList.last;
+        if (defer.resolve != null) defer.resolve(null);
+        return;
+      }
     }
     if (defer.resolve != null) defer.resolve(playlist.cursor && playlist.cursor.data);
   },
@@ -148,7 +185,15 @@ export default {
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
     if (playlist.cursor == null) playlist.cursor = playlist.trackList.last;
-    else playlist.cursor = playlist.cursor.prev;
+    else if (isRandom) {
+      let cursor = playlist.cursor;
+      for (let counter = getRandomArbitraryInt(1, playlist.count); counter > 0; --counter) {
+        cursor = cursor.prev;
+        if (cursor == null) cursor = playlist.trackList.last;
+      }
+      playlist.cursor = cursor;
+    } else playlist.cursor = playlist.cursor.prev;
+
     if (playlist.cursor == null) {
       if (isRepeatList) playlist.cursor = playlist.trackList.last;
       else playlist.cursor = playlist.trackList.first;

@@ -10,7 +10,7 @@
     </div>
     <div :class="blockName | bemElement('duration') | bemMods()">{{model.duration | duration('s', 'MM:SS')}}</div>
     <div :class="blockName | bemElement('info') | bemMods()">
-      {{model.type}} :: {{model.sampleRate}} kHz, {{model.bitrate}} kbps, {{model.size}} Mb
+      {{model.type}} :: {{model.sampleRate}} kHz, {{model.bitrate}} kbps, {{model.size | fileSize}}
     </div>
   </div>
 </template>

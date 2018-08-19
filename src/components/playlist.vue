@@ -26,11 +26,11 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { State, Getter, Mutation } from 'vuex-class';
+import { State, Getter, Mutation, Action } from 'vuex-class';
 
 import { Button } from '@/components/core';
 import Track from '@/components/track.vue';
-import { promisifyMutation } from '@/utils';
+import { promisify } from '@/utils';
 
 @Component({
   components: { Button, Track },
@@ -39,7 +39,11 @@ export default class Playlist extends Vue {
   @Prop({ default: () => ({}) }) private model: IPlaylistData;
   @Prop({ default: () => ({}) }) private mods!: Hash;
 
+  @State('player') private player: IPlayerData;
+
   private blockName: string = 'playlist';
+
+  @Getter('Player::currentTrack') private currentTrack: ITrackData;
 
   private get tracks() {
     if (this.model.trackList.first == null) return [];
@@ -52,11 +56,10 @@ export default class Playlist extends Vue {
     return res;
   }
 
-  @Getter('Player::currentTrack') private currentTrack: ITrackData;
-
-  @Mutation('createTrack') private createTrack: MutationMethod;
+  @Action('createTrack') private createTrack: MutationMethod;
   @Mutation('addTracksToPlaylist') private addTracksToPlaylist: MutationMethod;
   @Mutation('updateCursor') private updateCursor: MutationMethod;
+  @Mutation('updateActivePlaylist') private updateActivePlaylist: MutationMethod;
 
   private async load() {
     const input = document.createElement('input');
@@ -66,7 +69,7 @@ export default class Playlist extends Vue {
     input.onchange = async (event) => {
       const tracks = [];
       for (const file of (event.target as any).files) {
-        tracks.push(await promisifyMutation(this.createTrack, { file }));
+        tracks.push(await promisify(this.createTrack, { file }));
       }
       this.addTracksToPlaylist({ id: this.model.id, tracks });
     };
@@ -74,6 +77,10 @@ export default class Playlist extends Vue {
   }
 
   private selectTrack(node: ITrackNode) {
+    if (
+      this.player.activePlaylist != null &&
+      this.player.activePlaylist.id !== this.model.id
+    ) this.updateActivePlaylist(this.model);
     this.updateCursor({id: this.model.id, node});
   }
 
@@ -101,6 +108,7 @@ export default class Playlist extends Vue {
   grid-template-columns 100%
   overflow hidden
 
+  max-height 100%
   padding 4px
   border-radius 4px
 
@@ -126,6 +134,9 @@ export default class Playlist extends Vue {
 
       background hsla(0, 100%, 100%, .2)
       box-shadow inset 0px 1px 2px 0px hsla(0, 0%, 0%, .4)
+  
+  &__track-list
+    overflow auto
 
   &__total-count
   &__total-duration

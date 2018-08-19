@@ -37,14 +37,18 @@ export default class Layout extends Vue {
 <style scoped lang="stylus">
 .layout
   display grid
-  grid-template-rows 64px auto 64px
+  grid-template-rows 64px 1fr 64px
 
   height 100%
   width 100%
+
+  overflow hidden
   &__header
     display grid
   &__body
     display grid
+
+    overflow hidden
   &__footer
     display grid
 
