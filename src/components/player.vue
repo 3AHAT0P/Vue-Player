@@ -107,7 +107,6 @@ export default class Player extends Vue {
 
   private created() {
     this.onTimeUpdate = this.onTimeUpdate.bind(this);
-    this.onDurationChange = this.onDurationChange.bind(this);
     this.onAudioEnd = this.onAudioEnd.bind(this);
   }
 
