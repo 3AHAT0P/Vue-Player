@@ -12,6 +12,7 @@
           <span
             :class="blockName | bemElement('playlist-title-input') | bemMods()"
             contenteditable="true"
+            @keydown.stop.prevent.enter="$event.target.blur()"
             @blur="updateTitle"
           >{{value.name}}</span>
         </template>

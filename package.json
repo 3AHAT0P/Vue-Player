@@ -1,5 +1,23 @@
 {
-  "name": "player",
+  "name": "yawmp",
+  "description": "Yet Another Web Music Player",
+  "author": {
+    "name": "Igor Kostyakov",
+    "email": "i.a.kostyakov@gmail.com",
+    "url": "https://github.com/3AHAT0P"
+  },
+  "contributors": [
+    {
+      "name": "Alina Zheltoborodova",
+      "email": "a@wilix.ru",
+      "url": ""
+    },
+    {
+      "name": "Igor Kostyakov",
+      "email": "i.a.kostyakov@gmail.com",
+      "url": "https://github.com/3AHAT0P"
+    }
+  ],
   "version": "1.0.0",
   "private": true,
   "scripts": {
