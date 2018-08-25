@@ -85,4 +85,4 @@ Detailed changes for each release are documented in the release notes.
 
 [MIT](http://opensource.org/licenses/MIT)
 
-Copyright © 2018-present, Igor Kostyakov, Alina Zheltoborodova
+Copyright © 2018-present, Igor Kostyakov, Alina Gladkikh
