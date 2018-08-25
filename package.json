@@ -1,6 +1,24 @@
 {
-  "name": "player",
-  "version": "0.1.0",
+  "name": "yawmp",
+  "description": "Yet Another Web Music Player",
+  "author": {
+    "name": "Igor Kostyakov",
+    "email": "i.a.kostyakov@gmail.com",
+    "url": "https://github.com/3AHAT0P"
+  },
+  "contributors": [
+    {
+      "name": "Alina Zheltoborodova",
+      "email": "a@wilix.ru",
+      "url": ""
+    },
+    {
+      "name": "Igor Kostyakov",
+      "email": "i.a.kostyakov@gmail.com",
+      "url": "https://github.com/3AHAT0P"
+    }
+  ],
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -9,11 +27,15 @@
     "test:unit": "vue-cli-service test:unit"
   },
   "dependencies": {
+    "@types/lodash": "^4.14.110",
+    "lodash": "^4.17.10",
+    "material-design-icons": "^3.0.1",
     "vue": "^2.5.16",
     "vue-class-component": "^6.0.0",
     "vue-property-decorator": "^6.0.0",
     "vue-router": "^3.0.1",
-    "vuex": "^3.0.1"
+    "vuex": "^3.0.1",
+    "vuex-class": "^0.3.1"
   },
   "devDependencies": {
     "@types/jest": "^22.0.1",

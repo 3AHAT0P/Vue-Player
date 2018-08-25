@@ -2,8 +2,11 @@
   "compilerOptions": {
     "target": "es5",
     "module": "esnext",
-    "strict": true,
+    "strict": false,
     "jsx": "preserve",
+    "noImplicitAny": true,
+    "strictNullChecks": false,
+    "removeComments": true,
     "importHelpers": true,
     "moduleResolution": "node",
     "experimentalDecorators": true,
@@ -15,6 +18,10 @@
       "node",
       "jest"
     ],
+    "typeRoots": [
+      "./src",
+      "./node_modules/@types"
+    ],
     "paths": {
       "@/*": [
         "src/*"
@@ -22,6 +29,7 @@
     },
     "lib": [
       "es2015",
+      "es2017",
       "dom",
       "dom.iterable",
       "scripthost"
