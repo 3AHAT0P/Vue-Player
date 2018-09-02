@@ -18,7 +18,7 @@
       "url": "https://github.com/3AHAT0P"
     }
   ],
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

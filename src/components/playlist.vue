@@ -15,6 +15,7 @@
           :class="blockName | bemElement('track-item') | bemMods()"
           :mods="{state: (currentTrack != null && currentTrack.id === value.data.id) ? 'active' : 'default'}"
           @click="selectTrack(value)"
+          @delete="removeTrack(value)"
         />
       </template>
     </div>
@@ -58,6 +59,7 @@ export default class Playlist extends Vue {
 
   @Action('createTrack') private createTrack: MutationMethod;
   @Mutation('addTracksToPlaylist') private addTracksToPlaylist: MutationMethod;
+  @Mutation('removeTracksFromPlaylist') private removeTracksFromPlaylist: MutationMethod;
   @Mutation('updateCursor') private updateCursor: MutationMethod;
   @Mutation('updateActivePlaylist') private updateActivePlaylist: MutationMethod;
 
@@ -82,6 +84,10 @@ export default class Playlist extends Vue {
       this.player.activePlaylist.id !== this.model.id
     ) this.updateActivePlaylist(this.model);
     this.updateCursor({id: this.model.id, node});
+  }
+
+  private removeTrack(node: ITrackNode) {
+    this.removeTracksFromPlaylist({id: this.model.id, node});
   }
 
   get count() {

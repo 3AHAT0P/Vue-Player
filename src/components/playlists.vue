@@ -15,6 +15,7 @@
             @keydown.stop.prevent.enter="$event.target.blur()"
             @blur="updateTitle"
           >{{value.name}}</span>
+          <Button icon="close" :mods="{hover: 'size'}" @click.stop.prevent="deleteExistPlaylist(value)" />
         </template>
         <template v-else >
           {{index}}.
@@ -63,7 +64,7 @@ export default class Playlists extends Vue {
   @Prop({ default: () => ({}) }) private mods!: Hash;
 
   @State('player') private player: IPlayerData;
-  @State('playlists') private playlists: ITrackCollection;
+  @State('playlists') private playlists: IPlaylistCollection;
 
   private blockName: string = 'playlists';
 
@@ -78,7 +79,9 @@ export default class Playlists extends Vue {
 
   @Mutation('setTitleToPlaylist') private setTitleToPlaylist: MutationMethod;
   @Mutation('createPlaylist') private createPlaylist: MutationMethod;
+  @Mutation('deletePlaylist') private deletePlaylist: MutationMethod;
   @Mutation('updateActivePlaylist') private updateActivePlaylist: MutationMethod;
+  @Mutation('updateState') private updateState: MutationMethod;
 
   private setActivePlaylist(playlist: IPlaylistData) {
     if (this.activePlaylistId === playlist.id) return;
@@ -103,6 +106,17 @@ export default class Playlists extends Vue {
       title,
     });
     this.setActivePlaylist(playlist);
+  }
+
+  private async deleteExistPlaylist(playlist: IPlaylistData) {
+    this.deletePlaylist({ id: playlist.id });
+    // @TODO Need implement logic for reset player if deleted active playlist
+    if (this.player.activePlaylist.id === playlist.id) {
+      this.updateState('isStopped');
+      this.updateActivePlaylist(Object.values(this.playlists)[0]);
+    }
+    if (this.activePlaylistId === playlist.id)
+      this.setActivePlaylist(this.player.activePlaylist || Object.values(this.playlists)[0]);
   }
 
   private clearAddButtonText(event: Event) {

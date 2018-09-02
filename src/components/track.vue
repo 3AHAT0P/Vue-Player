@@ -9,6 +9,12 @@
       {{model.name}}
     </div>
     <div :class="blockName | bemElement('duration') | bemMods()">{{model.duration | duration('s', 'MM:SS')}}</div>
+    <Button
+      :class="blockName | bemElement('delete') | bemMods()"
+      :icon="'close'"
+      :mods="{hover: 'size'}"
+      @click.stop.prevent="onDelete" 
+    />
     <div :class="blockName | bemElement('info') | bemMods()">
       {{model.type}} :: {{model.sampleRate}} kHz, {{model.bitrate}} kbps, {{model.size | fileSize}}
     </div>
@@ -18,7 +24,11 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
-@Component
+import { Button } from '@/components/core';
+
+@Component({
+  components: { Button },
+})
 export default class Track extends Vue {
   @Prop({ default: -1 }) private index: number;
   @Prop({ default: null }) private model: ITrackData;
@@ -28,6 +38,10 @@ export default class Track extends Vue {
 
   private onClick() {
     this.$emit('click');
+  }
+
+  private onDelete() {
+    this.$emit('delete');
   }
 }
 </script>
@@ -51,6 +65,11 @@ export default class Track extends Vue {
   &:hover
     background hsla(190, 100%, 50%, .1)
     box-shadow 0 0 8px -2px hsla(190, 100%, 50%, .4)
+
+    .track__duration
+      display none
+    .track__delete
+      display grid
   
   &__background
     position absolute
@@ -97,6 +116,17 @@ export default class Track extends Vue {
 
   &__index
     padding-right 4px
+
+  &__delete
+    display none
+    justify-self end
+
+    opacity .6
+
+    color hsl(0, 100%, 50%)
+    transition-property opacity, transform
+    &:hover
+      opacity 1
 
   &__title
     grid-column-start 2

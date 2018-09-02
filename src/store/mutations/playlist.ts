@@ -11,6 +11,10 @@ declare global {
     tracks?: ITrackData[];
     defer?: Defer;
   }
+  interface IPlaylistDeleteMutationData {
+    id: string;
+    defer?: Defer;
+  }
   interface IPlaylistSetTitleMutationData {
     id: string;
     title: string;
@@ -19,6 +23,11 @@ declare global {
   interface IPlaylistAddTracksMutationData {
     id: string;
     tracks: ITrackData[];
+    defer?: Defer;
+  }
+  interface IPlaylistRemoveTrackMutationData {
+    id: string;
+    node: ITrackNode;
     defer?: Defer;
   }
   interface IPlaylistGetNextTrackMutationData {
@@ -102,6 +111,10 @@ export default {
     Vue.set(state.playlists, playlist.id, playlist);
     if (defer.resolve != null) defer.resolve(playlist);
   },
+  deletePlaylist(state: IMainData, { id, defer = {} as Defer }: IPlaylistDeleteMutationData): void {
+    Vue.delete(state.playlists, id);
+    if (defer.resolve != null) defer.resolve();
+  },
   setTitleToPlaylist(
     state: IMainData,
     {
@@ -143,6 +156,24 @@ export default {
     }
     Vue.set(playlist, 'count', playlist.count + tracks.length);
     if (defer.resolve != null) defer.resolve(playlist);
+  },
+  removeTracksFromPlaylist(
+    state: IMainData,
+    {
+      id,
+      node,
+      defer = {} as Defer,
+    }: IPlaylistRemoveTrackMutationData,
+  ): void {
+    const playlist: IPlaylistData = state.playlists[id];
+    if (node.prev != null) Vue.set(node.prev, 'next', node.next);
+    else playlist.trackList.first = node.next;
+    if (node.next != null) Vue.set(node.next, 'prev', node.prev);
+    else playlist.trackList.last = node.prev;
+    Vue.set(playlist, 'size', playlist.size - node.data.size);
+    Vue.set(playlist, 'duration', playlist.duration - node.data.duration);
+    Vue.set(playlist, 'count', playlist.count - 1);
+    if (defer.resolve != null) defer.resolve();
   },
   getNextTrack(
     state: IMainData,
