@@ -38,6 +38,7 @@ export default class Button extends Vue {
   grid-template-rows 1fr
   justify-content center
   align-items center
+  transform-origin center
 
   width 32px
   height 32px

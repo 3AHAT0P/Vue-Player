@@ -46,7 +46,7 @@ declare global {
   type MutationMethod = (payload: any) => void;
 
   type Defer = {
-    resolve: (data: any) => any;
+    resolve: (data?: any) => any;
     reject: (error: any) => any;
   }
 }
