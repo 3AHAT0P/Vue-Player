@@ -8,12 +8,13 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 
 @Component
 export default class Visualiser extends Vue {
   @Prop({ default: () => ({}) }) private mods!: Hash;
   @Prop({ default: (): AnalyserNode => null, required: true }) private analyser!: AnalyserNode;
+  @Prop({ default: () => false }) private isRun!: boolean;
   @Prop({ default: () => 100 }) private width!: number;
   @Prop({ default: () => 50 }) private height!: number;
   @Prop({ default: () => 32 }) private displayBins!: number;
@@ -30,6 +31,8 @@ export default class Visualiser extends Vue {
   private logBinLengths: number[] = null;
 
   private finalBins: number[] = null;
+
+  private oneMoreSecond: number = 60;
 
   private mounted() {
     this.init();
@@ -54,7 +57,11 @@ export default class Visualiser extends Vue {
   }
 
   private paint() {
-    requestAnimationFrame(this.paint.bind(this));
+    if (this.isRun) requestAnimationFrame(this.paint.bind(this));
+    else if (this.oneMoreSecond > 0) {
+      this.oneMoreSecond--;
+      requestAnimationFrame(this.paint.bind(this));
+    }
 
     this.ctx.fillStyle = 'hsla(0, 0%, 0%, 1)';
     this.ctx.fillRect(0, 0, this.width, this.height);
@@ -140,6 +147,14 @@ export default class Visualiser extends Vue {
 
   private changeType() {
     this.drawCurved = !this.drawCurved;
+  }
+
+  @Watch('isRun')
+  private onIsRunChange() {
+    if (this.isRun) {
+      this.oneMoreSecond = 60;
+      requestAnimationFrame(this.paint.bind(this));
+    }
   }
 }
 </script>
