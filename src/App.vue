@@ -1,5 +1,14 @@
 <template>
-  <div id="app" :class="blockName | bemMods({theme: 'dark'})">
+  <div
+    id="app"
+    :class="blockName | bemMods({theme: 'dark'})"
+
+    @dragenter.prevent="pass"
+    @dragleave.prevent="pass"
+    @dragover.prevent="pass"
+    @dragend.prevent="pass"
+    @drop.prevent="pass"
+  >
     <Layout>
       <template slot="header">
         <Header></Header>
@@ -23,6 +32,8 @@ import { Layout } from '@/components/core';
 })
 export default class App extends Vue {
   private blockName: string = 'app';
+  
+  private pass() {}
 }
 </script>
 

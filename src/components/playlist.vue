@@ -5,7 +5,14 @@
       <div :class="blockName | bemElement('total-duration') | bemMods()">{{duration | duration('s', 'DD:HH:MM:SS')}}</div>
       <div :class="blockName | bemElement('total-size') | bemMods()">{{size | fileSize}}</div>
     </div>
-    <div :class="blockName | bemElement('track-list') | bemMods()">
+    <div
+      :class="blockName | bemElement('track-list') | bemMods()"
+      @dragenter.prevent.capture="trackListDragEnter"
+      @dragleave.prevent.self="trackListDragLeave"
+      @dragover.prevent.capture="trackListDragOver"
+      @dragend.prevent.capture="trackListDragEnd"
+      @drop.prevent.capture="trackListDrop"
+    >
       <template v-if="model != null">
         <Track
           v-for="(value, index) in tracks"
@@ -57,6 +64,21 @@ export default class Playlist extends Vue {
     return res;
   }
 
+  get count() {
+    if (this.model == null) return 0;
+    return this.model.count;
+  }
+
+  get duration() {
+    if (this.model == null) return 0;
+    return this.model.duration;
+  }
+
+  get size() {
+    if (this.model == null) return 0;
+    return this.model.size;
+  }
+
   @Action('createTrack') private createTrack: MutationMethod;
   @Mutation('addTracksToPlaylist') private addTracksToPlaylist: MutationMethod;
   @Mutation('removeTracksFromPlaylist') private removeTracksFromPlaylist: MutationMethod;
@@ -90,19 +112,33 @@ export default class Playlist extends Vue {
     this.removeTracksFromPlaylist({id: this.model.id, node});
   }
 
-  get count() {
-    if (this.model == null) return 0;
-    return this.model.count;
+  private trackListDragEnter(event: DragEvent) {
+    this.$el.querySelector('.playlist__track-list').classList.add('playlist__track-list--drag-ready');
   }
 
-  get duration() {
-    if (this.model == null) return 0;
-    return this.model.duration;
+  private trackListDragLeave(event: DragEvent) {
+    // console.log(this.$el.querySelector('.playlist__track-list').contains((event.target as HTMLElement)),
+    // this.$el.querySelector('.playlist__track-list') === event.target)
+    // if (this.$el.querySelector('.playlist__track-list').contains((event.target as HTMLElement))) return;
+    this.$el.querySelector('.playlist__track-list').classList.remove('playlist__track-list--drag-ready');
   }
 
-  get size() {
-    if (this.model == null) return 0;
-    return this.model.size;
+  private trackListDragOver(event: DragEvent) {
+
+  }
+
+  private trackListDragEnd(event: DragEvent) {
+    this.$el.querySelector('.playlist__track-list').classList.remove('playlist__track-list--drag-ready');
+  }
+
+  private async trackListDrop(event: DragEvent) {
+    this.$el.querySelector('.playlist__track-list').classList.remove('playlist__track-list--drag-ready');
+    const tracks = [];
+    for (const file of Array.from(event.dataTransfer.files)) {
+      if (/^audio\/.*$/ig.test(file.type))
+        tracks.push(await promisify(this.createTrack, { file }));
+    }
+    this.addTracksToPlaylist({ id: this.model.id, tracks });
   }
 }
 </script>
@@ -143,6 +179,12 @@ export default class Playlist extends Vue {
   
   &__track-list
     overflow auto
+
+    &--drag-ready
+      background hsla(0, 0%, 100%, .2)
+      cursor copy
+      & *
+        pointer-events none
 
   &__total-count
   &__total-duration
