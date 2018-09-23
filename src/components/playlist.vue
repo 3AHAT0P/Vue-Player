@@ -124,7 +124,7 @@ export default class Playlist extends Vue {
   }
 
   private trackListDragOver(event: DragEvent) {
-
+    // Do nothing
   }
 
   private trackListDragEnd(event: DragEvent) {

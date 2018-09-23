@@ -9,47 +9,47 @@ declare global {
   interface IPlaylistCreateMutationData {
     title: string;
     tracks?: ITrackData[];
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistDeleteMutationData {
     id: string;
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistSetTitleMutationData {
     id: string;
     title: string;
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistAddTracksMutationData {
     id: string;
     tracks: ITrackData[];
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistRemoveTrackMutationData {
     id: string;
     node: ITrackNode;
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistGetNextTrackMutationData {
     id: string;
     isRepeatList: boolean;
     isRandom: boolean;
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistGetPrevTrackMutationData {
     id: string;
     isRepeatList: boolean;
     isRandom: boolean;
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistUpdateCursorMutationData {
     id: string;
     node: ITrackNode;
-    defer?: Defer;
+    defer?: IDefer;
   }
   interface IPlaylistRecalcMutationData {
     id: string;
-    defer?: Defer;
+    defer?: IDefer;
   }
 }
 
@@ -91,7 +91,7 @@ const generateListFromArray = (array: ITrackData[], playlist: IPlaylistData) => 
 };
 
 export default {
-  createPlaylist(state: IMainData, { title, tracks = [], defer = {} as Defer }: IPlaylistCreateMutationData): void {
+  createPlaylist(state: IMainData, { title, tracks = [], defer = {} as IDefer }: IPlaylistCreateMutationData): void {
 
     const playlist: IPlaylistData = {
       trackList: {
@@ -111,7 +111,7 @@ export default {
     Vue.set(state.playlists, playlist.id, playlist);
     if (defer.resolve != null) defer.resolve(playlist);
   },
-  deletePlaylist(state: IMainData, { id, defer = {} as Defer }: IPlaylistDeleteMutationData): void {
+  deletePlaylist(state: IMainData, { id, defer = {} as IDefer }: IPlaylistDeleteMutationData): void {
     Vue.delete(state.playlists, id);
     if (defer.resolve != null) defer.resolve();
   },
@@ -120,7 +120,7 @@ export default {
     {
       id,
       title,
-      defer = {} as Defer,
+      defer = {} as IDefer,
     }: IPlaylistSetTitleMutationData,
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
@@ -132,7 +132,7 @@ export default {
     {
       id,
       tracks = [],
-      defer = {} as Defer,
+      defer = {} as IDefer,
     }: IPlaylistAddTracksMutationData,
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
@@ -162,7 +162,7 @@ export default {
     {
       id,
       node,
-      defer = {} as Defer,
+      defer = {} as IDefer,
     }: IPlaylistRemoveTrackMutationData,
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
@@ -181,7 +181,7 @@ export default {
       id,
       isRepeatList = false,
       isRandom = false,
-      defer = {} as Defer,
+      defer = {} as IDefer,
     }: IPlaylistGetNextTrackMutationData,
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
@@ -211,7 +211,7 @@ export default {
       id,
       isRepeatList = false,
       isRandom = false,
-      defer = {} as Defer,
+      defer = {} as IDefer,
     }: IPlaylistGetPrevTrackMutationData,
   ): void {
     const playlist: IPlaylistData = state.playlists[id];
@@ -236,7 +236,7 @@ export default {
     {
       id,
       node,
-      defer = {} as Defer,
+      defer = {} as IDefer,
     }: IPlaylistUpdateCursorMutationData,
   ): void {
     const playlist: IPlaylistData = state.playlists[id];

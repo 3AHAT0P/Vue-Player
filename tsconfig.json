@@ -4,7 +4,7 @@
     "module": "esnext",
     "strict": false,
     "jsx": "preserve",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "strictNullChecks": false,
     "removeComments": true,
     "importHelpers": true,
