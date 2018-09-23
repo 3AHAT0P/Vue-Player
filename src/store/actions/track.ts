@@ -12,9 +12,10 @@ export default {
     { state, commit, dispatch }: IActionContext,
     { file, defer = {} as Defer }: ITrackCreateActionData,
   ) {
+    console.log('Track::Mutation:create - arg file', file);
     const track: ITrackData = {
       id: uuid(),
-      name: file.name.replace(/\..*$/, ''),
+      name: file.name.replace(/^(.*)\..{1,5}$/ig, '$1'),
       type: file.type.replace(/^.*\//, ''),
       size: file.size,
       source: URL.createObjectURL(file),
@@ -24,6 +25,7 @@ export default {
       originFile: file,
       relatedPlaylists: [],
     };
+    console.log('Track::Mutation:create - track', track);
 
     const audio = document.createElement('audio');
     audio.preload = 'metadata';

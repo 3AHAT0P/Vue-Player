@@ -11,16 +11,16 @@
     </div>
     <div :class="blockName | bemElement('display') | bemMods()">
       {{state.currentSecond | duration('s', 'MM:SS')}}
-      <Visualiser v-if="analyser != null" :analyser="analyser" :width="200" :height="30" :displayBins="64"/>
+      <Visualiser v-if="analyser != null" :analyser="analyser" :isRun="isPlaying" :width="200" :height="30" :displayBins="64"/>
     </div>
     <div :class="blockName | bemElement('progress') | bemMods()">
       <Progress :cacheProgress="cacheProgress" :playProgress="playProgress" @changed="seekPercent"/>
     </div>
     <div :class="blockName | bemElement('controls') | bemMods()">
       <Button :icon="isPlaying ? 'pause' : 'play_arrow'" :mods="{hover: 'size', state: (currentTrack ? 'default' : 'non-active')}" @click="togglePlay"/>
-      <Button icon="stop" :mods="{hover: 'size'}" @click="stop"/>
-      <Button icon="skip_previous" :mods="{hover: 'size'}" @click="prev"/>
-      <Button icon="skip_next" :mods="{hover: 'size'}" @click="next"/>
+      <Button icon="stop" :mods="{hover: 'size', state: (currentTrack != null ? 'active' : 'non-active')}" @click="stop"/>
+      <Button icon="skip_previous" :mods="{hover: 'size', state: (state.activePlaylist != null ? 'active' : 'non-active')}" @click="prev"/>
+      <Button icon="skip_next" :mods="{hover: 'size', state: (state.activePlaylist != null ? 'active' : 'non-active')}" @click="next"/>
       <Button icon="shuffle" :mods="{hover: 'size', state: (state.isShuffle ? 'active' : 'non-active')}" @click="toggleShuffleMode"/>
       <Button
         :icon="state.isRepeat > 1 ? 'repeat_one' : 'repeat'"
@@ -101,6 +101,10 @@ export default class Player extends Vue {
 
   @Watch('currentTrack')
   private onTrackChange() {
+    if (this.currentTrack == null) {
+      this.stop();
+      return;
+    }
     this.audio.src = this.currentTrack.source;
     this.play();
   }
@@ -169,13 +173,12 @@ export default class Player extends Vue {
   }
 
   private async togglePlay() {
-    if (this.audio.src != null) {
-      if (this.isPlaying) {
-        this.audio.pause();
-        this.updateState('isPaused');
-      } else {
-        this.play();
-      }
+    if (this.currentTrack == null) return;
+    if (this.isPlaying) {
+      this.audio.pause();
+      this.updateState('isPaused');
+    } else {
+      this.play();
     }
   }
 
@@ -186,10 +189,12 @@ export default class Player extends Vue {
   }
 
   private seekPercent(percent: number) {
+    if (this.currentTrack == null) return;
     this.audio.currentTime = percent * this.currentTrack.duration;
   }
 
   private async next() {
+    if (this.state.activePlaylist == null) return;
     const track = await promisify(
       this.getNextTrack,
       {
@@ -207,6 +212,7 @@ export default class Player extends Vue {
   }
 
   private async prev() {
+    if (this.state.activePlaylist == null) return;
     const track = await promisify(
       this.getPrevTrack,
       {

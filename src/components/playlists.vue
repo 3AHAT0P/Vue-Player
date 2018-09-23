@@ -41,6 +41,7 @@
     </div>
     <div :class="blockName | bemElement('body') | bemMods()">
       <Playlist
+        v-if="openedPlaylist != null"
         :model="openedPlaylist"
         :class="blockName | bemElement('playlist') | bemMods()"
       />
@@ -111,12 +112,15 @@ export default class Playlists extends Vue {
   private async deleteExistPlaylist(playlist: IPlaylistData) {
     this.deletePlaylist({ id: playlist.id });
     // @TODO Need implement logic for reset player if deleted active playlist
-    if (this.player.activePlaylist.id === playlist.id) {
+    if (this.player.activePlaylist != null && this.player.activePlaylist.id === playlist.id) {
       this.updateState('isStopped');
       this.updateActivePlaylist(Object.values(this.playlists)[0]);
     }
-    if (this.activePlaylistId === playlist.id)
-      this.setActivePlaylist(this.player.activePlaylist || Object.values(this.playlists)[0]);
+    if (this.activePlaylistId === playlist.id) {
+      const activePlaylist = this.player.activePlaylist || Object.values(this.playlists)[0];
+      if (activePlaylist != null) this.setActivePlaylist(activePlaylist);
+      else this.openedPlaylist = null;
+    }
   }
 
   private clearAddButtonText(event: Event) {

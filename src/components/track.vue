@@ -133,6 +133,7 @@ export default class Track extends Vue {
     grid-column-end 5
 
     overflow hidden
+    white-space nowrap
     text-overflow ellipsis
 
     max-width 100%
