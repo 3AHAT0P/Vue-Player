@@ -3,16 +3,18 @@ import { uuid } from '@/utils';
 declare global {
   interface ITrackCreateActionData {
     file: File;
-    defer?: Defer;
+    defer?: IDefer;
   }
 }
+
+const { log } = console;
 
 export default {
   async createTrack(
     { state, commit, dispatch }: IActionContext,
-    { file, defer = {} as Defer }: ITrackCreateActionData,
+    { file, defer = {} as IDefer }: ITrackCreateActionData,
   ) {
-    console.log('Track::Mutation:create - arg file', file);
+    log('Track::Mutation:create - arg file', file);
     const track: ITrackData = {
       id: uuid(),
       name: file.name.replace(/^(.*)\..{1,5}$/ig, '$1'),
@@ -25,7 +27,7 @@ export default {
       originFile: file,
       relatedPlaylists: [],
     };
-    console.log('Track::Mutation:create - track', track);
+    log('Track::Mutation:create - track', track);
 
     const audio = document.createElement('audio');
     audio.preload = 'metadata';

@@ -32,8 +32,10 @@ import { Layout } from '@/components/core';
 })
 export default class App extends Vue {
   private blockName: string = 'app';
-  
-  private pass() {}
+
+  private pass() {
+    // Do nothing
+  }
 }
 </script>
 
