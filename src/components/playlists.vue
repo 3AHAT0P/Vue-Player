@@ -87,7 +87,7 @@ export default class Playlists extends Vue {
   private setActivePlaylist(playlist: IPlaylistData) {
     if (this.activePlaylistId === playlist.id) return;
     this.openedPlaylist = playlist;
-    // this.updateActivePlaylist(playlist);
+    if (this.player.activePlaylist == null) this.updateActivePlaylist(playlist);
   }
 
   private updateTitle(event: Event) {
