@@ -39,6 +39,7 @@ import { State, Getter, Mutation, Action } from 'vuex-class';
 import { Button } from '@/components/core';
 import Track from '@/components/track.vue';
 import { promisify } from '@/utils';
+import { setTimeout } from 'timers';
 
 @Component({
   components: { Button, Track },
@@ -90,13 +91,15 @@ export default class Playlist extends Vue {
     input.type = 'file';
     input.multiple = true;
     input.accept = 'audio/*';
-    input.onchange = async (event) => {
+    const handler = async (event: Event) => {
+      input.removeEventListener('change', handler);
       const tracks = [];
-      for (const file of (event.target as any).files) {
+      for (const file of Array.from((event.target as HTMLInputElement).files)) {
         tracks.push(await promisify(this.createTrack, { file }));
       }
       this.addTracksToPlaylist({ id: this.model.id, tracks });
     };
+    input.addEventListener('change', handler);
     input.click();
   }
 
