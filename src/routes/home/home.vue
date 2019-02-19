@@ -17,6 +17,8 @@ import { Player, Playlists } from '@/components';
 })
 export default class Home extends Vue {
   private blockName: string = 'home-page';
+
+  private ready: boolean = false;
 }
 </script>
 
