@@ -166,6 +166,7 @@ export default class Player extends Vue {
   }
 
   private async play() {
+    if (this.ctx.state === 'suspended') this.ctx.resume();
     if (this.audio.src != null) {
       this.audio.play();
       if (this.state.status !== 'isPlaying') this.updateState('isPlaying');
